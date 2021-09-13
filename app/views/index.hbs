@@ -1,0 +1,389 @@
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #DDD;
+    }
+
+    tr:hover:not(.h) {
+        background-color: #D6EEEE;
+    }
+
+    .dels , .edit {
+        width: 10px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        padding-top: 100px;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    input[type=text],
+    input[type=password],
+    select {
+        width: 100%;
+        height: 30px;
+        margin: 5px 0 22px 0;
+        display: inline-block;
+        border: none;
+        background: #f1f1f1;
+    }
+
+    input[type=text]:focus,
+    input[type=password]:focus,
+    select:focus {
+        background-color: #ddd;
+        outline: none;
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: fit-content;
+        max-width: 500px;
+    }
+
+    .close {
+        color: #aaaaaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #000;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .modal button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        opacity: 0.9;
+    }
+</style>
+
+<div>
+    <button id="add">Добавить</button>
+    <button disabled>Удалить</button>
+</div>
+
+<table id="listemployees">
+    <tr class="h">
+        <th>ФИО</th>
+        <th>Отдел</th>
+        <th>Должность</th>
+        <td></td>
+        <td></td>
+    </tr>
+    {{#each employee}}
+    <tr data-id="{{this.id}}">
+        <td class="fio">{{this.name}}</td>
+        <td class="dep">{{this.department}}</td>
+        <td class="pos">{{this.position}}</td>
+        <td class="edit"><button data-id="{{this.id}}" class="editEmployee">Изменить</button></td>
+        <td class="dels"><button data-id="{{this.id}}" class="delEmployee">Удалить</button></td>
+    </tr>
+    {{/each}}
+</table>
+
+{{!-- modal --}}
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <h3>Добавление сотрудника</h3>
+
+        <hr>
+
+        <label><b>*Фамилия</b></label>
+        <input class="req" type="text" name="sname">
+
+        <label><b>*Имя</b></label>
+        <input class="req" type="text" name="fname">
+
+        <label><b>Отчество</b></label>
+        <input type="text" name="tname">
+
+        <label><b>*Адрес</b></label>
+        <input class="req" type="text" name="address">
+
+        <label><b>*Должность</b></label>
+        <input class="req" type="text" name="position">
+
+        <label><b>*Отдел</b></label>
+        <input class="req" type="text" name="department">
+
+        <div class="clearfix">
+            <button id="addEmployee" class="signupbtn">Добавить</button>
+        </div>
+
+    </div>
+</div>
+{{!-- /modal --}}
+
+{{!-- emodal --}}
+<div id="emodal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <h3>Редактирование записи</h3>
+
+        <hr>
+
+        <label><b>*Фамилия</b></label>
+        <input class="req" type="text" name="sname">
+
+        <label><b>*Имя</b></label>
+        <input class="req" type="text" name="fname">
+
+        <label><b>Отчество</b></label>
+        <input type="text" name="tname">
+
+        <label><b>*Адрес</b></label>
+        <input class="req" type="text" name="address">
+
+        <label><b>*Должность</b></label>
+        <input class="req" type="text" name="position">
+
+        <label><b>*Отдел</b></label>
+        <input class="req" type="text" name="department">
+
+
+        <label><b>Начальник</b></label>
+        <select id="employees">
+
+        </select>
+
+        <div class="clearfix">
+            <button id="saveEmployee" class="signupbtn">Сохранить</button>
+        </div>
+
+    </div>
+</div>
+{{!-- /emodal --}}
+
+<script>
+    var modal = $('#modal');
+    var emodal = $('#emodal');
+    var btn = $("#add");
+    var span = $(".close");
+    let currentId = 0;
+
+
+    btn.on('click', () => {
+        modal.css('display', "block");
+    })
+
+    $(document).delegate('.close', 'click', () => {
+        modal.css('display', "none");
+        emodal.css('display', "none");
+    })  
+
+    //$(document).on('click', event => {
+       //console.log($(event.target))
+       // if ($(event.target) == $("#modal")) {
+        //    modal.css('display', "none");
+//}
+//})
+
+    $('#addEmployee').on('click', () => {
+        
+        var BreakException = {};
+        var data = {};
+        var form = document.querySelectorAll('#modal .req');
+        var verify = true;
+        try {
+            form.forEach((input) => {
+                if (input.value.length < 1) {
+                    verify = false;
+                    alert("Пустое поле")
+                    throw BreakException;
+                }
+            })
+        } catch (e) {
+            if (e != BreakException) throw e;
+        }
+
+
+        if (!verify) {
+            return false;
+        }
+        else {
+            var formData = {
+                sname: $('#modal [name=sname]').val(),
+                fname: $('#modal [name=fname]').val(),
+                tname: $('#modal [name=tname]').val(),
+                address: $('#modal [name=address]').val(),
+                department: $('#modal [name=department]').val(),
+                position: $('#modal [name=position]').val(),
+            }
+
+            fetch("/addemployee", {
+                body: JSON.stringify(formData),
+                method: "post",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }).then((response) => {
+                return response.json();
+            }).then((response) => {
+                var data = response;
+                console.log(data)
+                var html = `
+                    <tr data-id="${data.id}">
+                        <td class="fio">${data.sname} ${data.fname} ${data.tname}</td>
+                        <td class="dep">${data.department}</td>
+                        <td class="pos">${data.position}</td>
+                        <td class="edit"><button data-id="${data.id}" class="editEmployee">Изменить</button></td>
+                        <td class="dels"><button data-id="${data.id}" class="delEmployee">Удалить</button></td>
+                    </tr>
+                `;
+                $('#listemployees').append(html);
+                modal.css('display', "none");
+            });
+        }
+    });
+
+    $(document).delegate('.delEmployee', 'click', (e) => {
+        if (confirm("Действительно удалить запись")) {
+
+            var id = $(e.target).data('id')
+            console.log(id)
+            fetch('/delemployee',
+                {
+                    method: "post",
+                    body: JSON.stringify({ id: id }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }).then(response => {
+                    return response.json();
+                }).then(response => {
+                    $(`tr[data-id=${response.id}]`).remove();
+                });
+        }
+    });
+
+    $(document).delegate("button.editEmployee", 'click', (e) => {
+        currentId = $(e.currentTarget).data("id");
+        fetch("/getemployee", {
+            method: "post",
+            body: JSON.stringify(
+                { id: $(e.currentTarget).data("id") }
+            ),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then(response => {
+            return response.json();
+        }).then(response => {
+            emodal.css('display', "block");
+            console.log(response)
+            var data = response.rows;
+            console.log(response.employees)
+            $('#emodal [name=sname]').val(data.sname);
+            $('#emodal [name=fname]').val(data.fname);
+            $('#emodal [name=tname]').val(data.tname);
+            $('#emodal [name=department]').val(data.department);
+            $('#emodal [name=position]').val(data.position);
+            $('#emodal [name=address]').val(data.address);
+
+            var html = "<option value='0'>Не указано</option>";
+            response.employees.forEach(el => {
+                html += `<option value="${el.id}">${el.sname} ${el.fname} ${el.tname}</option>`;
+            })
+
+            $('select#employees').html(html).val(response.boss.b_id || "");
+            globalThiscurrentId = el.id;
+        });
+    });
+
+    $("#saveEmployee").on('click', (e) => {
+        var BreakException = {};
+        var data = {};
+        var form = document.querySelectorAll('#emodal .req');
+        var verify = true;
+        try {
+            form.forEach((input) => {
+                if (input.value.length < 1) {
+                    verify = false;
+                    throw BreakException;
+                }
+            })
+        } catch (e) {
+            if (e != BreakException) throw e;
+        }
+
+
+        if (!verify) {
+            return false;
+        }
+        else {
+            var formData = {
+                id: currentId,
+                sname: $('#emodal [name=sname]').val(),
+                fname: $('#emodal [name=fname]').val(),
+                tname: $('#emodal [name=tname]').val(),
+                address: $('#emodal [name=address]').val(),
+                department: $('#emodal [name=department]').val(),
+                position: $('#emodal [name=position]').val(),
+            };
+
+            var boss = $('select#employees').val() || null;
+            
+            fetch("/saveemployee", {
+                body: JSON.stringify({employee: formData, boss:boss}),
+                method: "post",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }).then((response) => {
+                return response.json();
+            }).then((response) => {
+                var data = response;
+                console.log(response)
+                $(`tr[data-id=${currentId}] .fio`).text(`${data.sname} ${data.fname} ${data.tname}`);
+                $(`tr[data-id=${currentId}] .dep`).text(`${data.department}`);
+                $(`tr[data-id=${currentId}] .pos`).text(`${data.position}`);
+
+                //var html = `
+                //    <tr data-id="${data.id}"">
+                //        <td class="fio">${data.sname} ${data.fname} ${data.tname}</td>
+                //        <td class="dep">${data.department}</td>
+                //        <td class="pos">${data.position}</td>
+                //        <td class="dels"><button data-id="${data.id}" class="delEmployee">Удалить</button></td>
+                //    </tr>
+                //`;
+                
+                $('#modal').css('display', "none");
+            });
+        }
+
+    })
+</script>
